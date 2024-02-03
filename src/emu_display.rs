@@ -6,8 +6,8 @@ use thiserror::Error;
 
 type Bit = bool;
 
-const COLUMNS: usize = 64;
-const ROWS: usize = 32;
+pub const COLUMNS: usize = 64;
+pub const ROWS: usize = 32;
 
 lazy_static! {
     // TODO - These should be stored in the interpretter section 

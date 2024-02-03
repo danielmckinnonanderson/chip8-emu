@@ -1,15 +1,55 @@
-use display::*;
-use cpu::*;
+use std::{
+    ops::ControlFlow,
+    time::Duration,
+};
+use crossterm::event::{self, Event, KeyCode};
 
-mod display;
+use emu_display::{SPRITES, PixelLocation};
+use ratatui::Frame;
+use tui::*;
+
 mod cpu;
+mod emu_display;
+mod tui;
 
-fn main() {
-    let mut display = Chip8Display::new();
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-    display.set_pixel(PixelLocation { x: 0, y: 0 }, true).expect("How tf did this cause an error");
-    display.set_pixel(PixelLocation { x: 12, y: 12}, true).expect("How tf did this cause an error");
+fn main() -> Result<()> {
+    let mut emulator = cpu::Chip8Emu::new();
+    let mut tui = make_terminal().expect("Could not create terminal UI.");
+    let mut tui_open = true;
 
-    display.render();
+    let loc = PixelLocation {
+        x: 12,
+        y: 12
+    };
+
+    emulator.get_display_mut().set_pixel(loc, true).expect("If this errored you are screwed");
+
+
+    while tui_open {
+        // Advance emulator state
+
+        tui.draw(|frame: &mut Frame| {
+            tui::draw_frame(frame, emulator.get_display());
+        })?;
+
+        if handle_events()?.is_break() {
+            tui_open = false;
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_events() -> Result<ControlFlow<()>> {
+    if event::poll(Duration::from_millis(100))? {
+        if let Event::Key(key) = event::read()? {
+            if let KeyCode::Char('q') = key.code {
+                return Ok(ControlFlow::Break(()));
+            }
+        }
+    }
+    Ok(ControlFlow::Continue(()))
 }
 
