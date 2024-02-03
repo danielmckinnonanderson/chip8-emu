@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-use std::fmt;
+use std::{fmt, collections::HashMap, char};
+use lazy_static::lazy_static;
 use thiserror::Error;
 
 type Bit = bool;
@@ -8,6 +9,37 @@ type Bit = bool;
 const COLUMNS: usize = 64;
 const ROWS: usize = 32;
 
+lazy_static! {
+    // TODO - These should be stored in the interpretter section 
+    // of memory (addresses 0x000 to 0x1FF)
+
+    /// Sprites represent characters as an 8 wide by 5 high grid of bits.
+    pub static ref SPRITES: HashMap<char, [u8; 5]> = {
+        let mut sprites = HashMap::new();
+
+        sprites.insert('0', [0xF0, 0x90, 0x90, 0x90, 0xF0]);
+        sprites.insert('1', [0x20, 0x60, 0x20, 0x20, 0x70]);
+        sprites.insert('2', [0xF0, 0x10, 0xF0, 0x80, 0xF0]);
+        sprites.insert('3', [0xF0, 0x10, 0xF0, 0x10, 0xF0]);
+
+        sprites.insert('4', [0x90, 0x90, 0xF0, 0x10, 0x10]);
+        sprites.insert('5', [0xF0, 0x80, 0xF0, 0x10, 0xF0]);
+        sprites.insert('6', [0xF0, 0x80, 0xF0, 0x90, 0xF0]);
+        sprites.insert('7', [0xF0, 0x10, 0x20, 0x40, 0x40]);
+
+        sprites.insert('8', [0xF0, 0x90, 0xF0, 0x90, 0xF0]);
+        sprites.insert('9', [0xF0, 0x90, 0xF0, 0x10, 0xF0]);
+        sprites.insert('A', [0xF0, 0x90, 0xF0, 0x90, 0x90]);
+        sprites.insert('B', [0xE0, 0x90, 0xE0, 0x90, 0xE0]);
+
+        sprites.insert('C', [0xF0, 0x80, 0x80, 0x80, 0xF0]);
+        sprites.insert('D', [0xE0, 0x90, 0x90, 0x90, 0xE0]);
+        sprites.insert('E', [0xF0, 0x80, 0xF0, 0x80, 0xF0]);
+        sprites.insert('F', [0xF0, 0x80, 0xF0, 0x80, 0x80]);
+
+        sprites
+    };
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct PixelLocation {
@@ -36,7 +68,7 @@ impl Chip8Display {
     }
 
     /// Set the provided pixel to value.
-    pub fn set_pixel(&mut self, pixel: PixelLocation,value: Bit) -> Result<(), ()> {
+    pub fn set_pixel(&mut self, pixel: PixelLocation, value: Bit) -> Result<(), ()> {
         let idx = pixel.to_array_index();
         let pixel = &mut self.pixels[idx];
 
@@ -59,6 +91,11 @@ impl Chip8Display {
         let idx = point.to_array_index();
         self.pixels[idx]
     }
+
+    /// Renders the current state to the output device (terminal UI)
+    pub fn render(&self) -> () {
+        println!("{}", self);
+    }
 }
 
 impl fmt::Display for Chip8Display {
@@ -67,7 +104,6 @@ impl fmt::Display for Chip8Display {
             for col in 0..COLUMNS {
                 let idx = row * COLUMNS + col;
 
-                // TODO - Verify correctness
                 let char = if self.pixels[idx] {
                     "■"
                 } else {
